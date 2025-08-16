@@ -1,14 +1,17 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Wallet, Palette, ImageIcon, Upload, Eraser, Download, RotateCcw } from "lucide-react"
+import { Wallet, Palette, ImageIcon, Upload, Eraser, RotateCcw } from "lucide-react"
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from "react-sketch-canvas"
 import { useRef, useState } from "react"
 
 export default function HomePage() {
   const canvasRef = useRef<ReactSketchCanvasRef>(null)
-  const [strokeColor, setStrokeColor] = useState("#ff00ff")
+  const [strokeColor, setStrokeColor] = useState("#164e63")
   const [strokeWidth, setStrokeWidth] = useState(4)
+
+  const [isConnected, setIsConnected] = useState(false)
+  const [walletAddress, setWalletAddress] = useState("")
 
   const handleClear = () => {
     canvasRef.current?.clearCanvas()
@@ -22,131 +25,143 @@ export default function HomePage() {
     canvasRef.current?.eraseMode(false)
   }
 
-  const handleDownload = () => {
-    canvasRef.current?.exportImage("png").then((data) => {
-      const link = document.createElement("a")
-      link.download = "neon-art.png"
-      link.href = data
-      link.click()
-    })
+  const handleWalletAction = () => {
+    if (isConnected) {
+      setIsConnected(false)
+      setWalletAddress("")
+    } else {
+      // Simulate wallet connection
+      setIsConnected(true)
+      setWalletAddress("0x1234...5678")
+    }
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="retro-grid absolute inset-0 opacity-40" />
-
+    <div
+      className="min-h-screen relative overflow-hidden flex flex-col"
+      style={{
+        backgroundImage: "url(/gallery-background.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <header className="relative z-10 p-6 flex justify-between items-center">
-        <div></div>
-        <Button className="retro-button">
+        <h1 className="font-sans font-light text-3xl md:text-4xl text-white drop-shadow-lg tracking-wide">
+          welcome to the <span className="font-bold text-cyan-400">Emergent Gallery</span>
+        </h1>
+        <Button
+          className="bg-white/90 backdrop-blur-sm text-gray-800 hover:bg-white font-medium px-6 shadow-lg"
+          onClick={handleWalletAction}
+        >
           <Wallet className="w-4 h-4 mr-2" />
-          CONNECT WALLET
+          {isConnected ? `Disconnect (${walletAddress})` : "Connect Wallet"}
         </Button>
       </header>
 
-      <main className="relative z-10 container mx-auto px-6 py-2 text-center">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="font-serif font-bold text-4xl md:text-5xl mb-4 neon-glow text-primary leading-tight">
-            DIGITAL <span className="text-secondary">CANVAS</span>
-          </h2>
-
-          {/* Drawing Controls */}
-          <div className="retro-border bg-white/95 backdrop-blur-sm rounded-lg max-w-2xl mx-auto mb-6 shadow-2xl shadow-primary/20">
-            <div className="p-3">
-              {/* Drawing Controls */}
-              <div className="flex flex-wrap justify-center gap-2 mb-3 p-2 bg-gray-100 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-mono text-gray-700">COLOR:</label>
-                  <input
-                    type="color"
-                    value={strokeColor}
-                    onChange={(e) => setStrokeColor(e.target.value)}
-                    className="w-8 h-8 rounded border-2 border-gray-300 cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-mono text-gray-700">SIZE:</label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    value={strokeWidth}
-                    onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                    className="w-20"
-                  />
-                  <span className="text-sm font-mono text-gray-700 w-6">{strokeWidth}</span>
-                </div>
-
-                <Button onClick={handlePen} size="sm" variant="outline" className="font-mono bg-transparent">
-                  <Palette className="w-4 h-4 mr-1" />
-                  PEN
-                </Button>
-
-                <Button onClick={handleEraser} size="sm" variant="outline" className="font-mono bg-transparent">
-                  <Eraser className="w-4 h-4 mr-1" />
-                  ERASE
-                </Button>
-
-                <Button onClick={handleClear} size="sm" variant="outline" className="font-mono bg-transparent">
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  CLEAR
-                </Button>
-
-                <Button onClick={handleDownload} size="sm" variant="outline" className="font-mono bg-transparent">
-                  <Download className="w-4 h-4 mr-1" />
-                  SAVE
-                </Button>
-              </div>
-
-              {/* Canvas */}
-              <div className="aspect-[3/2] bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
-                <ReactSketchCanvas
-                  ref={canvasRef}
-                  strokeWidth={strokeWidth}
-                  strokeColor={strokeColor}
-                  canvasColor="white"
-                  style={{
-                    border: "none",
-                    borderRadius: "0.5rem",
-                  }}
-                  width="100%"
-                  height="100%"
-                />
-              </div>
-            </div>
+      <main className="relative z-10 flex-1 flex items-center justify-center px-6">
+        <div className="max-w-2xl w-full">
+          <div className="aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl">
+            <ReactSketchCanvas
+              ref={canvasRef}
+              strokeWidth={strokeWidth}
+              strokeColor={strokeColor}
+              canvasColor="white"
+              style={{
+                border: "none",
+                borderRadius: "0.75rem",
+              }}
+              width="100%"
+              height="100%"
+            />
           </div>
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-card/90 backdrop-blur-md border-t-2 border-primary/50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex justify-center gap-8">
-            <Button
-              variant="ghost"
-              className="flex flex-col items-center gap-2 text-foreground hover:text-primary hover:bg-primary/10 p-4 font-mono"
-            >
-              <Palette className="w-6 h-6" />
-              <span className="text-sm font-bold">MY ART</span>
-            </Button>
+      <div className="relative z-20 pb-6">
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-center">
+            <div className="inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-amber-100">Color</label>
+                <input
+                  type="color"
+                  value={strokeColor}
+                  onChange={(e) => setStrokeColor(e.target.value)}
+                  className="w-8 h-8 rounded border border-amber-700 cursor-pointer bg-white"
+                />
+              </div>
 
-            <Button
-              variant="ghost"
-              className="flex flex-col items-center gap-2 text-foreground hover:text-secondary hover:bg-secondary/10 p-4 font-mono"
-            >
-              <ImageIcon className="w-6 h-6" />
-              <span className="text-sm font-bold">GALLERY</span>
-            </Button>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-amber-100">Brush</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  className="w-16 accent-cyan-400"
+                />
+                <span className="text-xs font-medium text-amber-100 w-4">{strokeWidth}</span>
+              </div>
 
-            <Button
-              variant="ghost"
-              className="flex flex-col items-center gap-2 text-foreground hover:text-accent hover:bg-accent/10 p-4 font-mono"
-            >
-              <Upload className="w-6 h-6" />
-              <span className="text-sm font-bold">SUBMIT</span>
-            </Button>
+              <div className="flex gap-1">
+                <Button
+                  onClick={handlePen}
+                  size="sm"
+                  className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z" />
+                  </svg>
+                </Button>
+
+                <Button
+                  onClick={handleEraser}
+                  size="sm"
+                  className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                >
+                  <Eraser className="w-4 h-4" />
+                </Button>
+
+                <Button
+                  onClick={handleClear}
+                  size="sm"
+                  className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </nav>
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-2">
+        <Button
+          size="sm"
+          className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-2"
+        >
+          <Palette className="w-4 h-4 mr-1" />
+          <span className="text-xs">My Art</span>
+        </Button>
+
+        <Button
+          size="sm"
+          className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-2"
+        >
+          <ImageIcon className="w-4 h-4 mr-1" />
+          <span className="text-xs">Gallery</span>
+        </Button>
+
+        <Button
+          size="sm"
+          className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-2"
+        >
+          <Upload className="w-4 h-4 mr-1" />
+          <span className="text-xs">Submit</span>
+        </Button>
+      </div>
     </div>
   )
 }

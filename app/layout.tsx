@@ -18,9 +18,8 @@ const sourceSans = Source_Sans_3({
 })
 
 export const metadata: Metadata = {
-  title: "ZK Raffle - Future of NFT Draws",
-  description:
-    "Experience fairness and excitement with cross-chain ONFT tickets in our ZK protected NFT raffle platform",
+  title: "Digital Canvas - 80s Retro Art App",
+  description: "Create digital art with our 80s-inspired drawing canvas",
   generator: "v0.app",
 }
 
