@@ -46,17 +46,47 @@ export default function HomePage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <header className="relative z-10 p-6 flex justify-between items-center">
-        <h1 className="font-sans font-light text-3xl md:text-4xl text-white drop-shadow-lg tracking-wide">
-          welcome to the <span className="font-bold text-cyan-400">Emergent Gallery</span>
-        </h1>
-        <Button
-          className="bg-white/90 backdrop-blur-sm text-gray-800 hover:bg-white font-medium px-6 shadow-lg"
-          onClick={handleWalletAction}
-        >
-          <Wallet className="w-4 h-4 mr-2" />
-          {isConnected ? `Disconnect (${walletAddress})` : "Connect Wallet"}
-        </Button>
+      <header className="relative z-10 p-6">
+        <div className="flex justify-between items-center mb-3">
+          <h1 className="font-sans font-light text-3xl md:text-4xl text-white drop-shadow-lg tracking-wide">
+            welcome to the <span className="font-bold text-cyan-400">Emergent Gallery</span>
+          </h1>
+          <Button
+            className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 font-medium px-6 shadow-lg"
+            onClick={handleWalletAction}
+          >
+            <Wallet className="w-4 h-4 mr-2" />
+            {isConnected ? `Disconnect (${walletAddress})` : "Connect Wallet"}
+          </Button>
+        </div>
+
+        <div className="flex justify-end">
+          <div className="flex flex-col gap-2">
+            <Button
+              size="sm"
+              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
+            >
+              <Palette className="w-3 h-3 mr-1" />
+              <span className="text-xs">My Art</span>
+            </Button>
+
+            <Button
+              size="sm"
+              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
+            >
+              <ImageIcon className="w-3 h-3 mr-1" />
+              <span className="text-xs">Gallery</span>
+            </Button>
+
+            <Button
+              size="sm"
+              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
+            >
+              <Upload className="w-3 h-3 mr-1" />
+              <span className="text-xs">Submit</span>
+            </Button>
+          </div>
+        </div>
       </header>
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
@@ -135,32 +165,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-2">
-        <Button
-          size="sm"
-          className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-2"
-        >
-          <Palette className="w-4 h-4 mr-1" />
-          <span className="text-xs">My Art</span>
-        </Button>
-
-        <Button
-          size="sm"
-          className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-2"
-        >
-          <ImageIcon className="w-4 h-4 mr-1" />
-          <span className="text-xs">Gallery</span>
-        </Button>
-
-        <Button
-          size="sm"
-          className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-2"
-        >
-          <Upload className="w-4 h-4 mr-1" />
-          <span className="text-xs">Submit</span>
-        </Button>
       </div>
     </div>
   )
