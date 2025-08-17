@@ -1,6 +1,6 @@
 # Emergent Gallery UI!
 
-###### UI for the Emergent Gallery project
+###### UI for the Emergent Gallery
 
 _Automatically synced with your [v0.app](https://v0.app) deployments_
 
