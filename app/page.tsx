@@ -4,16 +4,23 @@ import { Button } from "@/components/ui/button"
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from "react-sketch-canvas"
 import { useRef, useState } from "react"
 import { useWallet } from "@/hooks/useWallet"
+import Link from "next/link"
 
 export default function HomePage() {
   const canvasRef = useRef<ReactSketchCanvasRef>(null)
   const [strokeColor, setStrokeColor] = useState("#164e63")
   const [strokeWidth, setStrokeWidth] = useState(4)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadResult, setUploadResult] = useState<any>(null)
+
+  // Configure your eggman API URL here
+  const EGGMAN_API_URL = process.env.NEXT_PUBLIC_EGGMAN_API_URL || "http://localhost:3005"
 
   const { isConnected, address, connect, disconnect, isConnecting } = useWallet()
 
   const handleClear = () => {
     canvasRef.current?.clearCanvas()
+    setUploadResult(null)
   }
 
   const handleEraser = () => {
@@ -29,6 +36,66 @@ export default function HomePage() {
       disconnect()
     } else {
       connect()
+    }
+  }
+
+  const handlePay = async () => {
+    if (!isConnected) {
+      alert("Please connect your wallet first")
+      return
+    }
+
+    if (!canvasRef.current) {
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Export canvas as data URL
+      const dataUrl = await canvasRef.current.exportImage("jpeg")
+
+      // Convert data URL to blob for file upload
+      const response = await fetch(dataUrl)
+      const blob = await response.blob()
+
+      // Check if blob is too small (empty canvas)
+      if (blob.size < 1000) {
+        alert("Please draw something on the canvas first!")
+        setIsSubmitting(false)
+        return
+      }
+
+      // Create a file object from the blob
+      const file = new File([blob], `artwork-${Date.now()}.jpeg`, { type: "image/jpeg" })
+
+      // Demo: Open payment popup
+      const paymentUrl = `${EGGMAN_API_URL}/pay`
+      window.open(paymentUrl, "x402Payment", "width=600,height=800,scrollbars=yes,resizable=yes")
+
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("walletAddress", address || "")
+
+      const uploadResponse = await fetch(`${EGGMAN_API_URL}/store`, {
+        method: "POST",
+        body: formData,
+      })
+      console.log(uploadResponse)
+      if (uploadResponse.ok) {
+        const result = await uploadResponse.json()
+        setUploadResult(result)
+        console.log("Upload successful:", result)
+      } else {
+        console.error("Upload failed")
+      }
+
+      setIsSubmitting(false)
+      // Show a message to the user that the upload is complete
+      alert("Upload complete! Your artwork has been uploaded.")
+    } catch (error) {
+      console.error("Error:", error)
+      setIsSubmitting(false)
     }
   }
 
@@ -123,28 +190,24 @@ export default function HomePage() {
 
         <div className="flex justify-end">
           <div className="flex flex-col gap-2">
-            <Button
-              size="sm"
-              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
-            >
-              <PaletteIcon />
-              <span className="text-xs ml-1">My Art</span>
-            </Button>
+            <Link href="/gallery">
+              <Button
+                size="sm"
+                className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5 w-full"
+              >
+                <ImageIcon />
+                <span className="text-xs ml-1">Gallery</span>
+              </Button>
+            </Link>
 
             <Button
               size="sm"
-              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
-            >
-              <ImageIcon />
-              <span className="text-xs ml-1">Gallery</span>
-            </Button>
-
-            <Button
-              size="sm"
-              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
+              className="bg-green-700/90 hover:bg-green-600 text-white border border-green-600 font-medium px-3 py-1.5 shadow-lg"
+              onClick={handlePay}
+              disabled={isSubmitting || !isConnected}
             >
               <UploadIcon />
-              <span className="text-xs ml-1">Submit</span>
+              <span className="text-xs ml-1">{isSubmitting ? "Processing..." : "Pay & Upload ($0.10)"}</span>
             </Button>
           </div>
         </div>
@@ -152,7 +215,9 @@ export default function HomePage() {
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
         <div className="max-w-2xl w-full">
-          <div className="aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl">
+          <div
+            className={`aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl ${isSubmitting ? "opacity-50 pointer-events-none" : ""}`}
+          >
             <ReactSketchCanvas
               ref={canvasRef}
               strokeWidth={strokeWidth}
@@ -166,13 +231,49 @@ export default function HomePage() {
               height="100%"
             />
           </div>
+
+          {isSubmitting && (
+            <div className="mt-4 p-4 bg-blue-900/90 backdrop-blur-sm rounded-xl border border-blue-600 shadow-lg animate-pulse">
+              <h3 className="text-blue-100 font-medium mb-2">💳 Processing Payment & Upload...</h3>
+              <div className="text-blue-200 text-sm">Please complete the x402 checkout in the popup window.</div>
+            </div>
+          )}
+
+          {uploadResult && (
+            <div className="mt-4 p-4 bg-green-900/90 backdrop-blur-sm rounded-xl border border-green-600 shadow-lg">
+              <h3 className="text-green-100 font-medium mb-2">🎉 Upload Successful!</h3>
+              <div className="space-y-2 text-sm">
+                {uploadResult.blobId && (
+                  <div className="text-green-200">
+                    <span className="font-medium">Blob ID:</span>
+                    <div className="mt-1 p-2 bg-black/30 rounded font-mono text-xs break-all">
+                      {uploadResult.blobId}
+                    </div>
+                  </div>
+                )}
+                {uploadResult.blobObjectId && (
+                  <div className="text-green-200">
+                    <span className="font-medium">Object ID:</span>
+                    <div className="mt-1 p-2 bg-black/30 rounded font-mono text-xs break-all">
+                      {uploadResult.blobObjectId}
+                    </div>
+                  </div>
+                )}
+                <div className="text-green-300 text-xs">
+                  {uploadResult.message || "Your artwork has been stored on the Walrus network"}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       <div className="relative z-20 pb-6">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-center">
-            <div className="inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl">
+            <div
+              className={`inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl ${isSubmitting ? "opacity-50 pointer-events-none" : ""}`}
+            >
               <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-amber-100">Color</label>
                 <input
@@ -180,6 +281,7 @@ export default function HomePage() {
                   value={strokeColor}
                   onChange={(e) => setStrokeColor(e.target.value)}
                   className="w-8 h-8 rounded border border-amber-700 cursor-pointer bg-white"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -192,6 +294,7 @@ export default function HomePage() {
                   value={strokeWidth}
                   onChange={(e) => setStrokeWidth(Number(e.target.value))}
                   className="w-16 accent-cyan-400"
+                  disabled={isSubmitting}
                 />
                 <span className="text-xs font-medium text-amber-100 w-4">{strokeWidth}</span>
               </div>
@@ -201,6 +304,7 @@ export default function HomePage() {
                   onClick={handlePen}
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                  disabled={isSubmitting}
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z" />
@@ -211,6 +315,7 @@ export default function HomePage() {
                   onClick={handleEraser}
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                  disabled={isSubmitting}
                 >
                   <EraserIcon />
                 </Button>
@@ -219,6 +324,7 @@ export default function HomePage() {
                   onClick={handleClear}
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                  disabled={isSubmitting}
                 >
                   <RotateIcon />
                 </Button>
