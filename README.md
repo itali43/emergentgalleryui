@@ -1,8 +1,8 @@
 # Emergent Gallery UI!
 
-###### UI for the EG project
+###### UI for the Emergent Gallery project
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+_Automatically synced with your [v0.app](https://v0.app) deployments_
 
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ewilliamsrexcoms-projects/v0-green-crypto-landing)
 [![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/fICR6vsYPmK)
