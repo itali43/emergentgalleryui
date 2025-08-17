@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
 
 const EGGMAN_API_URL = process.env.NEXT_PUBLIC_EGGMAN_API_URL || "http://localhost:3005"
 
@@ -42,6 +43,8 @@ const mockPaintings = [
 export default function GalleryPage() {
   const [paintings, setPaintings] = useState(mockPaintings)
   const [loading, setLoading] = useState(false)
+  const [forgingTokens, setForgingTokens] = useState<Set<number>>(new Set())
+  const [forgeResults, setForgeResults] = useState<Map<number, string>>(new Map())
 
   useEffect(() => {
     const fetchPaintings = async () => {
@@ -54,10 +57,11 @@ export default function GalleryPage() {
         const data = await response.json()
         
         if (data.images && Array.isArray(data.images)) {
+          const length = data.images.length;
           setPaintings(data.images.map((item: any, index: number) => ({
-            tokenId: 1000 + index + 1,
+            tokenId: length - index,
             imageUrl: `${EGGMAN_API_URL}${item.url}`,
-            owner: `0x${item.filename.replace(/-/g, '').substring(0, 40)}`
+            owner: item.owner
           })))
         } else {
           setPaintings(mockPaintings)
@@ -74,6 +78,36 @@ export default function GalleryPage() {
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
+
+  const handleForgeToken = async (tokenId: number) => {
+    setForgingTokens(prev => new Set(prev).add(tokenId))
+    
+    try {
+      // TODO: Implement actual cross-chain forging logic
+      const txnHash = await simulateCrossChainAction(tokenId)
+      setForgeResults(prev => new Map(prev).set(tokenId, txnHash))
+      console.log(`Successfully forged token ${tokenId}, txn: ${txnHash}`)
+    } catch (error) {
+      console.error(`Failed to forge token ${tokenId}:`, error)
+    } finally {
+      setForgingTokens(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(tokenId)
+        return newSet
+      })
+    }
+  }
+
+  const simulateCrossChainAction = async (tokenId: number): Promise<string> => {
+    // Simulate cross-chain transaction delay
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Generate a mock transaction hash
+        const mockTxnHash = `0x${Math.random().toString(16).substr(2, 64)}`
+        resolve(mockTxnHash)
+      }, 3000) // 3 second delay to simulate cross-chain action
+    })
   }
 
   return (
@@ -147,14 +181,31 @@ export default function GalleryPage() {
                     </div>
 
                     <Button
-                      className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                      onClick={() => {
-                        // TODO: Implement forging functionality
-                        console.log(`Forging token ${painting.tokenId}`)
-                      }}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleForgeToken(painting.tokenId)}
+                      disabled={forgingTokens.has(painting.tokenId)}
                     >
-                      Forge This Masterpiece!
+                      {forgingTokens.has(painting.tokenId) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Forging...
+                        </>
+                      ) : (
+                        "Forge This Masterpiece!"
+                      )}
                     </Button>
+
+                    {forgeResults.has(painting.tokenId) && (
+                      <div className="mt-3 p-3 bg-green-900/90 backdrop-blur-sm rounded-lg border border-green-600 shadow-lg">
+                        <h4 className="text-green-100 font-medium text-sm mb-2">🎉 Forged Successfully!</h4>
+                        <div className="text-green-200 text-xs">
+                          <span className="font-medium">Transaction Hash:</span>
+                          <div className="mt-1 p-2 bg-black/30 rounded font-mono text-xs break-all">
+                            {forgeResults.get(painting.tokenId)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
