@@ -44,6 +44,7 @@ export default function GalleryPage() {
   const [paintings, setPaintings] = useState(mockPaintings)
   const [loading, setLoading] = useState(false)
   const [forgingTokens, setForgingTokens] = useState<Set<number>>(new Set())
+  const [forgeResults, setForgeResults] = useState<Map<number, string>>(new Map())
 
   useEffect(() => {
     const fetchPaintings = async () => {
@@ -83,8 +84,9 @@ export default function GalleryPage() {
     
     try {
       // TODO: Implement actual cross-chain forging logic
-      await simulateCrossChainAction(tokenId)
-      console.log(`Successfully forged token ${tokenId}`)
+      const txnHash = await simulateCrossChainAction(tokenId)
+      setForgeResults(prev => new Map(prev).set(tokenId, txnHash))
+      console.log(`Successfully forged token ${tokenId}, txn: ${txnHash}`)
     } catch (error) {
       console.error(`Failed to forge token ${tokenId}:`, error)
     } finally {
@@ -96,11 +98,13 @@ export default function GalleryPage() {
     }
   }
 
-  const simulateCrossChainAction = async (tokenId: number): Promise<void> => {
+  const simulateCrossChainAction = async (tokenId: number): Promise<string> => {
     // Simulate cross-chain transaction delay
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve()
+        // Generate a mock transaction hash
+        const mockTxnHash = `0x${Math.random().toString(16).substr(2, 64)}`
+        resolve(mockTxnHash)
       }, 3000) // 3 second delay to simulate cross-chain action
     })
   }
@@ -189,6 +193,18 @@ export default function GalleryPage() {
                         "Forge This Masterpiece!"
                       )}
                     </Button>
+
+                    {forgeResults.has(painting.tokenId) && (
+                      <div className="mt-3 p-3 bg-green-900/90 backdrop-blur-sm rounded-lg border border-green-600 shadow-lg">
+                        <h4 className="text-green-100 font-medium text-sm mb-2">🎉 Forged Successfully!</h4>
+                        <div className="text-green-200 text-xs">
+                          <span className="font-medium">Transaction Hash:</span>
+                          <div className="mt-1 p-2 bg-black/30 rounded font-mono text-xs break-all">
+                            {forgeResults.get(painting.tokenId)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
