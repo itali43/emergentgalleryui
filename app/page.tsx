@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from "react-sketch-canvas"
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState } from "react"
 import { useWallet } from "@/hooks/useWallet"
+import Link from "next/link"
 
 export default function HomePage() {
   const canvasRef = useRef<ReactSketchCanvasRef>(null)
@@ -13,7 +14,7 @@ export default function HomePage() {
   const [uploadResult, setUploadResult] = useState<any>(null)
 
   // Configure your eggman API URL here
-  const EGGMAN_API_URL = process.env.NEXT_PUBLIC_EGGMAN_API_URL || 'http://localhost:3005'
+  const EGGMAN_API_URL = process.env.NEXT_PUBLIC_EGGMAN_API_URL || "http://localhost:3005"
 
   const { isConnected, address, connect, disconnect, isConnecting } = useWallet()
 
@@ -49,56 +50,50 @@ export default function HomePage() {
     }
 
     setIsSubmitting(true)
-    
+
     try {
       // Export canvas as data URL
       const dataUrl = await canvasRef.current.exportImage("jpeg")
-      
+
       // Convert data URL to blob for file upload
       const response = await fetch(dataUrl)
       const blob = await response.blob()
-      
+
       // Check if blob is too small (empty canvas)
       if (blob.size < 1000) {
         alert("Please draw something on the canvas first!")
         setIsSubmitting(false)
         return
       }
-      
+
       // Create a file object from the blob
-      const file = new File([blob], `artwork-${Date.now()}.jpeg`, { type: 'image/jpeg' })
-      
+      const file = new File([blob], `artwork-${Date.now()}.jpeg`, { type: "image/jpeg" })
+
       // Demo: Open payment popup
       const paymentUrl = `${EGGMAN_API_URL}/pay`
-      window.open(
-        paymentUrl,
-        'x402Payment',
-        'width=600,height=800,scrollbars=yes,resizable=yes'
-      )
-      
+      window.open(paymentUrl, "x402Payment", "width=600,height=800,scrollbars=yes,resizable=yes")
 
       const formData = new FormData()
-      formData.append('file', file)
-      
+      formData.append("file", file)
+
       const uploadResponse = await fetch(`${EGGMAN_API_URL}/store`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       })
       console.log(uploadResponse)
       if (uploadResponse.ok) {
         const result = await uploadResponse.json()
         setUploadResult(result)
-        console.log('Upload successful:', result)
+        console.log("Upload successful:", result)
       } else {
-        console.error('Upload failed')
+        console.error("Upload failed")
       }
-      
+
       setIsSubmitting(false)
       // Show a message to the user that the upload is complete
-      alert("Upload complete! Your artwork has been uploaded.");
-      
+      alert("Upload complete! Your artwork has been uploaded.")
     } catch (error) {
-      console.error('Error:', error)
+      console.error("Error:", error)
       setIsSubmitting(false)
     }
   }
@@ -194,21 +189,15 @@ export default function HomePage() {
 
         <div className="flex justify-end">
           <div className="flex flex-col gap-2">
-            <Button
-              size="sm"
-              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
-            >
-              <PaletteIcon />
-              <span className="text-xs ml-1">My Art</span>
-            </Button>
-
-            <Button
-              size="sm"
-              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
-            >
-              <ImageIcon />
-              <span className="text-xs ml-1">Gallery</span>
-            </Button>
+            <Link href="/gallery">
+              <Button
+                size="sm"
+                className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5 w-full"
+              >
+                <ImageIcon />
+                <span className="text-xs ml-1">Gallery</span>
+              </Button>
+            </Link>
 
             <Button
               size="sm"
@@ -217,9 +206,7 @@ export default function HomePage() {
               disabled={isSubmitting || !isConnected}
             >
               <UploadIcon />
-              <span className="text-xs ml-1">
-                {isSubmitting ? "Processing..." : "Pay & Upload ($0.10)"}
-              </span>
+              <span className="text-xs ml-1">{isSubmitting ? "Processing..." : "Pay & Upload ($0.10)"}</span>
             </Button>
           </div>
         </div>
@@ -227,7 +214,9 @@ export default function HomePage() {
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
         <div className="max-w-2xl w-full">
-          <div className={`aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div
+            className={`aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl ${isSubmitting ? "opacity-50 pointer-events-none" : ""}`}
+          >
             <ReactSketchCanvas
               ref={canvasRef}
               strokeWidth={strokeWidth}
@@ -241,16 +230,14 @@ export default function HomePage() {
               height="100%"
             />
           </div>
-          
+
           {isSubmitting && (
             <div className="mt-4 p-4 bg-blue-900/90 backdrop-blur-sm rounded-xl border border-blue-600 shadow-lg animate-pulse">
               <h3 className="text-blue-100 font-medium mb-2">💳 Processing Payment & Upload...</h3>
-              <div className="text-blue-200 text-sm">
-                Please complete the x402 checkout in the popup window.
-              </div>
+              <div className="text-blue-200 text-sm">Please complete the x402 checkout in the popup window.</div>
             </div>
           )}
-          
+
           {uploadResult && (
             <div className="mt-4 p-4 bg-green-900/90 backdrop-blur-sm rounded-xl border border-green-600 shadow-lg">
               <h3 className="text-green-100 font-medium mb-2">🎉 Upload Successful!</h3>
@@ -272,7 +259,7 @@ export default function HomePage() {
                   </div>
                 )}
                 <div className="text-green-300 text-xs">
-                  {uploadResult.message || 'Your artwork has been stored on the Walrus network'}
+                  {uploadResult.message || "Your artwork has been stored on the Walrus network"}
                 </div>
               </div>
             </div>
@@ -283,7 +270,9 @@ export default function HomePage() {
       <div className="relative z-20 pb-6">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-center">
-            <div className={`inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div
+              className={`inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl ${isSubmitting ? "opacity-50 pointer-events-none" : ""}`}
+            >
               <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-amber-100">Color</label>
                 <input
