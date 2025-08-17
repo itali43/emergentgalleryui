@@ -10,10 +10,7 @@ export default function HomePage() {
   const [strokeColor, setStrokeColor] = useState("#164e63")
   const [strokeWidth, setStrokeWidth] = useState(4)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'pending' | 'paid' | 'expired'>('unpaid')
-  const [transactionString, setTransactionString] = useState<string | null>(null)
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [uploadResult, setUploadResult] = useState<any>(null)
 
   // Configure your eggman API URL here
   const EGGMAN_API_URL = process.env.NEXT_PUBLIC_EGGMAN_API_URL || 'http://localhost:3005'
@@ -22,6 +19,7 @@ export default function HomePage() {
 
   const handleClear = () => {
     canvasRef.current?.clearCanvas()
+    setUploadResult(null)
   }
 
   const handleEraser = () => {
@@ -40,77 +38,13 @@ export default function HomePage() {
     }
   }
 
-  const handlePayment = async () => {
-    if (!isConnected) {
-      alert("Please connect your wallet first")
-      return
-    }
-    setShowPaymentModal(true)
-  }
-
-  const handlePaymentSuccess = (newTransactionString: string) => {
-    setTransactionString(newTransactionString)
-    setPaymentStatus('paid')
-    setShowPaymentModal(false)
-    setIsProcessingPayment(false)
-  }
-
-  const handlePaymentClose = () => {
-    setShowPaymentModal(false)
-    if (paymentStatus === 'pending') {
-      setPaymentStatus('unpaid')
-    }
-  }
-
-  // Function to check payment status
-  const checkPaymentStatus = async () => {
-    if (paymentStatus !== 'pending') return
-
-    try {
-      const response = await fetch(`${EGGMAN_API_URL}/admin/transactions`)
-      if (response.ok) {
-        const data = await response.json()
-        // Look for the most recent unused transaction
-        const recentTransaction = data.transactions
-          .filter((t: any) => !t.used && t.createdAt)
-          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-        
-        if (recentTransaction) {
-          setTransactionString(recentTransaction.transactionString)
-          setPaymentStatus('paid')
-          setShowPaymentModal(false)
-          setIsProcessingPayment(false)
-        }
-      }
-    } catch (error) {
-      console.error('Error checking payment status:', error)
-    }
-  }
-
-  // Check payment status every 5 seconds when pending
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (paymentStatus === 'pending') {
-      interval = setInterval(checkPaymentStatus, 5000)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [paymentStatus])
-
-  const handleSubmit = async () => {
+  const handlePay = async () => {
     if (!isConnected) {
       alert("Please connect your wallet first")
       return
     }
 
     if (!canvasRef.current) {
-      alert("Canvas not available")
-      return
-    }
-
-    if (paymentStatus !== 'paid' || !transactionString) {
-      alert("Please complete payment first")
       return
     }
 
@@ -124,43 +58,47 @@ export default function HomePage() {
       const response = await fetch(dataUrl)
       const blob = await response.blob()
       
+      // Check if blob is too small (empty canvas)
+      if (blob.size < 1000) {
+        alert("Please draw something on the canvas first!")
+        setIsSubmitting(false)
+        return
+      }
+      
       // Create a file object from the blob
-      const file = new File([blob], `artwork-${Date.now()}.png`, { type: 'image/jpeg' })
+      const file = new File([blob], `artwork-${Date.now()}.jpeg`, { type: 'image/jpeg' })
       
-      // Use the transaction string from successful payment
-      const currentTransactionString = transactionString
+      // Demo: Open payment popup
+      const paymentUrl = `${EGGMAN_API_URL}/pay`
+      window.open(
+        paymentUrl,
+        'x402Payment',
+        'width=600,height=800,scrollbars=yes,resizable=yes'
+      )
       
-      // Prepare form data for file upload
+
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('transactionString', currentTransactionString)
       
-      // Make API call to your external eggman API
-      const apiResponse = await fetch(`${EGGMAN_API_URL}/store`, {
+      const uploadResponse = await fetch(`${EGGMAN_API_URL}/store`, {
         method: 'POST',
         body: formData,
       })
-
-      if (!apiResponse.ok) {
-        const errorData = await apiResponse.json()
-        throw new Error(errorData.error || `HTTP error! status: ${apiResponse.status}`)
+      console.log(uploadResponse)
+      if (uploadResponse.ok) {
+        const result = await uploadResponse.json()
+        setUploadResult(result)
+        console.log('Upload successful:', result)
+      } else {
+        console.error('Upload failed')
       }
-
-      const result = await apiResponse.json()
-      console.log('Submission successful:', result)
       
-      // Clear canvas after successful submission
-      handleClear()
-      // Reset payment status after successful submission
-      setPaymentStatus('unpaid')
-      setTransactionString(null)
-      alert(`Art submitted successfully! Blob ID: ${result.blobId || 'N/A'}`)
+      setIsSubmitting(false)
+      // Show a message to the user that the upload is complete
+      alert("Upload complete! Your artwork has been uploaded.");
       
     } catch (error) {
-      console.error('Error submitting art:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      alert(`Failed to submit art: ${errorMessage}`)
-    } finally {
+      console.error('Error:', error)
       setIsSubmitting(false)
     }
   }
@@ -274,41 +212,13 @@ export default function HomePage() {
 
             <Button
               size="sm"
-              className={`backdrop-blur-sm text-amber-100 border font-medium px-3 py-1.5 shadow-lg ${
-                paymentStatus === 'paid' 
-                  ? 'bg-green-700/90 hover:bg-green-600 border-green-600' 
-                  : paymentStatus === 'pending'
-                    ? 'bg-yellow-700/90 hover:bg-yellow-600 border-yellow-600'
-                    : paymentStatus === 'expired'
-                      ? 'bg-red-700/90 hover:bg-red-600 border-red-600'
-                      : 'bg-amber-900/90 hover:bg-amber-800 border-amber-700'
-              }`}
-              onClick={handlePayment}
-              disabled={isProcessingPayment || !isConnected || paymentStatus === 'paid'}
+              className="bg-green-700/90 hover:bg-green-600 text-white border border-green-600 font-medium px-3 py-1.5 shadow-lg"
+              onClick={handlePay}
+              disabled={isSubmitting || !isConnected}
             >
               <UploadIcon />
               <span className="text-xs ml-1">
-                {isProcessingPayment 
-                  ? "Processing..." 
-                  : paymentStatus === 'paid' 
-                    ? "Paid ✓" 
-                    : paymentStatus === 'pending'
-                      ? "Pending..."
-                      : paymentStatus === 'expired'
-                        ? "Expired"
-                        : "Pay $0.10"}
-              </span>
-            </Button>
-
-            <Button
-              size="sm"
-              className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
-              onClick={handleSubmit}
-              disabled={isSubmitting || !isConnected || paymentStatus !== 'paid'}
-            >
-              <UploadIcon />
-              <span className="text-xs ml-1">
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {isSubmitting ? "Processing..." : "Pay & Upload ($0.10)"}
               </span>
             </Button>
           </div>
@@ -317,7 +227,7 @@ export default function HomePage() {
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
         <div className="max-w-2xl w-full">
-          <div className="aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl">
+          <div className={`aspect-[4/3] bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-2xl ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}>
             <ReactSketchCanvas
               ref={canvasRef}
               strokeWidth={strokeWidth}
@@ -331,13 +241,49 @@ export default function HomePage() {
               height="100%"
             />
           </div>
+          
+          {isSubmitting && (
+            <div className="mt-4 p-4 bg-blue-900/90 backdrop-blur-sm rounded-xl border border-blue-600 shadow-lg animate-pulse">
+              <h3 className="text-blue-100 font-medium mb-2">💳 Processing Payment & Upload...</h3>
+              <div className="text-blue-200 text-sm">
+                Please complete the x402 checkout in the popup window.
+              </div>
+            </div>
+          )}
+          
+          {uploadResult && (
+            <div className="mt-4 p-4 bg-green-900/90 backdrop-blur-sm rounded-xl border border-green-600 shadow-lg">
+              <h3 className="text-green-100 font-medium mb-2">🎉 Upload Successful!</h3>
+              <div className="space-y-2 text-sm">
+                {uploadResult.blobId && (
+                  <div className="text-green-200">
+                    <span className="font-medium">Blob ID:</span>
+                    <div className="mt-1 p-2 bg-black/30 rounded font-mono text-xs break-all">
+                      {uploadResult.blobId}
+                    </div>
+                  </div>
+                )}
+                {uploadResult.blobObjectId && (
+                  <div className="text-green-200">
+                    <span className="font-medium">Object ID:</span>
+                    <div className="mt-1 p-2 bg-black/30 rounded font-mono text-xs break-all">
+                      {uploadResult.blobObjectId}
+                    </div>
+                  </div>
+                )}
+                <div className="text-green-300 text-xs">
+                  {uploadResult.message || 'Your artwork has been stored on the Walrus network'}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       <div className="relative z-20 pb-6">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-center">
-            <div className="inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl">
+            <div className={`inline-flex items-center gap-3 p-3 bg-amber-900/90 backdrop-blur-sm rounded-xl shadow-2xl ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-amber-100">Color</label>
                 <input
@@ -345,6 +291,7 @@ export default function HomePage() {
                   value={strokeColor}
                   onChange={(e) => setStrokeColor(e.target.value)}
                   className="w-8 h-8 rounded border border-amber-700 cursor-pointer bg-white"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -357,6 +304,7 @@ export default function HomePage() {
                   value={strokeWidth}
                   onChange={(e) => setStrokeWidth(Number(e.target.value))}
                   className="w-16 accent-cyan-400"
+                  disabled={isSubmitting}
                 />
                 <span className="text-xs font-medium text-amber-100 w-4">{strokeWidth}</span>
               </div>
@@ -366,6 +314,7 @@ export default function HomePage() {
                   onClick={handlePen}
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                  disabled={isSubmitting}
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z" />
@@ -376,6 +325,7 @@ export default function HomePage() {
                   onClick={handleEraser}
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                  disabled={isSubmitting}
                 >
                   <EraserIcon />
                 </Button>
@@ -384,6 +334,7 @@ export default function HomePage() {
                   onClick={handleClear}
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
+                  disabled={isSubmitting}
                 >
                   <RotateIcon />
                 </Button>
@@ -392,155 +343,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-amber-900/95 backdrop-blur-md border-2 border-amber-600 rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-amber-100">Complete Payment</h3>
-              <Button
-                onClick={handlePaymentClose}
-                size="sm"
-                className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600"
-              >
-                ✕
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="bg-amber-800/50 rounded-lg p-4">
-                <h4 className="font-semibold text-amber-100 mb-2">Payment Details</h4>
-                <p className="text-amber-200 text-sm">
-                  • Amount: $0.10 USD<br/>
-                  • Network: Base Sepolia<br/>
-                  • Description: Payment for file storage<br/>
-                  • Wallet: {address?.slice(0, 6)}...{address?.slice(-4)}
-                </p>
-              </div>
-
-              <div className="bg-amber-800/50 rounded-lg p-4">
-                <h4 className="font-semibold text-amber-100 mb-2">How to Pay</h4>
-                <ol className="text-amber-200 text-sm space-y-1">
-                  <li>1. Click the "Pay $0.10 Now" button below</li>
-                  <li>2. Your connected wallet will prompt for payment approval</li>
-                  <li>3. Complete the transaction in your wallet</li>
-                  <li>4. Payment will be verified automatically</li>
-                </ol>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={async () => {
-                    setIsProcessingPayment(true)
-                    setPaymentStatus('pending')
-                    
-                    try {
-                      // Make direct payment request to x402 endpoint
-                      // This should trigger the x402 middleware to handle the payment
-                      const response = await fetch(`${EGGMAN_API_URL}/pay`, {
-                        method: 'GET',
-                        credentials: 'include', // Include cookies/auth
-                        headers: {
-                          'Accept': 'application/json',
-                          'Content-Type': 'application/json',
-                        },
-                      })
-                      
-                      console.log('Payment response:', response.status, response.headers)
-                      
-                      if (response.ok) {
-                        const result = await response.json()
-                        console.log('Payment result:', result)
-                        
-                        if (result.transactionString) {
-                          // Payment successful
-                          setTransactionString(result.transactionString)
-                          setPaymentStatus('paid')
-                          setShowPaymentModal(false)
-                          setIsProcessingPayment(false)
-                        } else {
-                          throw new Error('No transaction string received')
-                        }
-                      } else {
-                        // If not OK, the x402 middleware might be redirecting
-                        // Check if we got redirected to a payment page
-                        const responseText = await response.text()
-                        console.log('Payment response text:', responseText)
-                        
-                        if (responseText.includes('x402') || responseText.includes('payment')) {
-                          // x402 is handling the payment, let's wait for completion
-                          // Set up polling to check for payment completion
-                          const checkInterval = setInterval(async () => {
-                            try {
-                              const statusResponse = await fetch(`${EGGMAN_API_URL}/admin/transactions`)
-                              if (statusResponse.ok) {
-                                const data = await statusResponse.json()
-                                const recentTransaction = data.transactions
-                                  .filter((t: any) => !t.used && t.createdAt)
-                                  .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-                                
-                                if (recentTransaction) {
-                                  setTransactionString(recentTransaction.transactionString)
-                                  setPaymentStatus('paid')
-                                  setShowPaymentModal(false)
-                                  setIsProcessingPayment(false)
-                                  clearInterval(checkInterval)
-                                }
-                              }
-                            } catch (error) {
-                              console.error('Error checking payment status:', error)
-                            }
-                          }, 2000) // Check every 2 seconds
-                          
-                          // Cleanup after 10 minutes
-                          setTimeout(() => {
-                            clearInterval(checkInterval)
-                            if (paymentStatus === 'pending') {
-                              setPaymentStatus('expired')
-                              setIsProcessingPayment(false)
-                            }
-                          }, 10 * 60 * 1000)
-                        } else {
-                          throw new Error('Payment failed - unexpected response')
-                        }
-                      }
-                    } catch (error) {
-                      console.error('Payment error:', error)
-                      setPaymentStatus('unpaid')
-                      setIsProcessingPayment(false)
-                      alert(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-                    }
-                  }}
-                  className="flex-1 bg-green-700 hover:bg-green-600 text-white font-medium py-3"
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? "Processing..." : "Pay $0.10 Now"}
-                </Button>
-                
-                <Button
-                  onClick={handlePaymentClose}
-                  className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600"
-                >
-                  Cancel
-                </Button>
-              </div>
-
-              {paymentStatus === 'pending' && (
-                <div className="bg-yellow-700/50 rounded-lg p-4 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-300 mx-auto mb-2"></div>
-                  <p className="text-yellow-200 text-sm">
-                    Payment processing... Please complete the payment in the x402 window and return here.
-                  </p>
-                  <p className="text-yellow-300 text-xs mt-2">
-                    This modal will close automatically when payment is confirmed.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

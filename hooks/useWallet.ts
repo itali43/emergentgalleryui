@@ -33,13 +33,14 @@ export function useWallet() {
         }
       } catch (error) {
         console.error("Error checking wallet connection:", error)
+        // Don't show alert for connection check errors
       }
     }
   }
 
   const connect = async () => {
     if (typeof window === "undefined" || !window.ethereum) {
-      alert("Please install MetaMask or another Web3 wallet")
+      console.error("MetaMask or Web3 wallet not found")
       return
     }
 
