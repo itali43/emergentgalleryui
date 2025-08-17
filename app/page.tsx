@@ -259,6 +259,24 @@ export default function HomePage() {
                     </div>
                   </div>
                 )}
+                {uploadResult.mintTransactionHash && (
+                  <div className="text-green-200">
+                    <span className="font-medium">NFT Transaction:</span>
+                    <div className="mt-1">
+                      <a
+                        href={uploadResult.mintTransactionUrl || `https://sepolia.basescan.org/tx/${uploadResult.mintTransactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 p-2 bg-black/30 hover:bg-black/40 rounded text-cyan-400 hover:text-cyan-300 font-mono text-xs transition-colors"
+                      >
+                        <span className="break-all">{uploadResult.mintTransactionHash}</span>
+                        <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div className="text-green-300 text-xs">
                   {uploadResult.message || "Your artwork has been stored on the Walrus network"}
                 </div>
