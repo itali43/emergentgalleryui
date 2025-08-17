@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
+const EGGMAN_API_URL = process.env.NEXT_PUBLIC_EGGMAN_API_URL || "http://localhost:3005"
+
 const mockPaintings = [
   {
     tokenId: 1001,
@@ -41,19 +43,33 @@ export default function GalleryPage() {
   const [paintings, setPaintings] = useState(mockPaintings)
   const [loading, setLoading] = useState(false)
 
-  // Future API integration
   useEffect(() => {
-    // TODO: Replace with actual API call to NEXT_PUBLIC_EGGMAN_API_URL
-    // const fetchPaintings = async () => {
-    //   const response = await fetch(`${process.env.NEXT_PUBLIC_EGGMAN_API_URL}/paintings`)
-    //   const data = await response.json()
-    //   setPaintings(data.map(item => ({
-    //     tokenId: item.tokenId,
-    //     imageUrl: item.imageUrl,
-    //     owner: item.owner
-    //   })))
-    // }
-    // fetchPaintings()
+    const fetchPaintings = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch(`${EGGMAN_API_URL}/images`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch images')
+        }
+        const data = await response.json()
+        
+        if (data.images && Array.isArray(data.images)) {
+          setPaintings(data.images.map((item: any, index: number) => ({
+            tokenId: 1000 + index + 1,
+            imageUrl: `${EGGMAN_API_URL}${item.url}`,
+            owner: `0x${item.filename.replace(/-/g, '').substring(0, 40)}`
+          })))
+        } else {
+          setPaintings(mockPaintings)
+        }
+      } catch (error) {
+        console.error('Error fetching paintings:', error)
+        setPaintings(mockPaintings)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPaintings()
   }, [])
 
   const truncateAddress = (address: string) => {
