@@ -1,17 +1,16 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Wallet, Palette, ImageIcon, Upload, Eraser, RotateCcw } from "lucide-react"
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from "react-sketch-canvas"
 import { useRef, useState } from "react"
+import { useWallet } from "@/hooks/useWallet"
 
 export default function HomePage() {
   const canvasRef = useRef<ReactSketchCanvasRef>(null)
   const [strokeColor, setStrokeColor] = useState("#164e63")
   const [strokeWidth, setStrokeWidth] = useState(4)
 
-  const [isConnected, setIsConnected] = useState(false)
-  const [walletAddress, setWalletAddress] = useState("")
+  const { isConnected, address, connect, disconnect, isConnecting } = useWallet()
 
   const handleClear = () => {
     canvasRef.current?.clearCanvas()
@@ -27,14 +26,47 @@ export default function HomePage() {
 
   const handleWalletAction = () => {
     if (isConnected) {
-      setIsConnected(false)
-      setWalletAddress("")
+      disconnect()
     } else {
-      // Simulate wallet connection
-      setIsConnected(true)
-      setWalletAddress("0x1234...5678")
+      connect()
     }
   }
+
+  const WalletIcon = () => (
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+    </svg>
+  )
+
+  const PaletteIcon = () => (
+    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 3.9 2.51 7.24 6 8.48.35-.66.54-1.43.54-2.48 0-.83-.67-1.5-1.5-1.5S6.5 16.17 6.5 17c0 .28.22.5.5.5.83 0 1.5.67 1.5 1.5S7.83 20.5 7 20.5c-3.31 0-6-2.69-6-6 0-4.42 3.58-8 8-8s8 3.58 8 8c0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-3.86-3.14-7-7-7z" />
+    </svg>
+  )
+
+  const ImageIcon = () => (
+    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+    </svg>
+  )
+
+  const UploadIcon = () => (
+    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+    </svg>
+  )
+
+  const EraserIcon = () => (
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 0 1-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0M4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-6.36-6.36-3.54 3.36Z" />
+    </svg>
+  )
+
+  const RotateIcon = () => (
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12,6V9L16,5L12,1V4A8,8 0 0,0 4,12C4,13.57 4.46,15.03 5.24,16.26L6.7,14.8C6.25,13.97 6,13 6,12A6,6 0 0,1 12,6M18.76,7.74L17.3,9.2C17.74,10.04 18,11 18,12A6,6 0 0,1 12,18V15L8,19L12,23V20A8,8 0 0,0 20,12C20,10.43 19.54,8.97 18.76,7.74Z" />
+    </svg>
+  )
 
   return (
     <div
@@ -76,9 +108,16 @@ export default function HomePage() {
           <Button
             className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 font-medium px-6 shadow-lg"
             onClick={handleWalletAction}
+            disabled={isConnecting}
           >
-            <Wallet className="w-4 h-4 mr-2" />
-            {isConnected ? `Disconnect (${walletAddress})` : "Connect Wallet"}
+            <WalletIcon />
+            <span className="ml-2">
+              {isConnecting
+                ? "Connecting..."
+                : isConnected
+                  ? `Disconnect (${address?.slice(0, 6)}...${address?.slice(-4)})`
+                  : "Connect Wallet"}
+            </span>
           </Button>
         </div>
 
@@ -88,24 +127,24 @@ export default function HomePage() {
               size="sm"
               className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
             >
-              <Palette className="w-3 h-3 mr-1" />
-              <span className="text-xs">My Art</span>
+              <PaletteIcon />
+              <span className="text-xs ml-1">My Art</span>
             </Button>
 
             <Button
               size="sm"
               className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
             >
-              <ImageIcon className="w-3 h-3 mr-1" />
-              <span className="text-xs">Gallery</span>
+              <ImageIcon />
+              <span className="text-xs ml-1">Gallery</span>
             </Button>
 
             <Button
               size="sm"
               className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 shadow-lg px-3 py-1.5"
             >
-              <Upload className="w-3 h-3 mr-1" />
-              <span className="text-xs">Submit</span>
+              <UploadIcon />
+              <span className="text-xs ml-1">Submit</span>
             </Button>
           </div>
         </div>
@@ -173,7 +212,7 @@ export default function HomePage() {
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
                 >
-                  <Eraser className="w-4 h-4" />
+                  <EraserIcon />
                 </Button>
 
                 <Button
@@ -181,7 +220,7 @@ export default function HomePage() {
                   size="sm"
                   className="bg-amber-800 hover:bg-amber-700 text-amber-100 border-amber-600 px-2 py-1"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateIcon />
                 </Button>
               </div>
             </div>

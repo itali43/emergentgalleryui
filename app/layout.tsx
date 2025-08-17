@@ -18,8 +18,8 @@ const sourceSans = Source_Sans_3({
 })
 
 export const metadata: Metadata = {
-  title: "Digital Canvas - 80s Retro Art App",
-  description: "Create digital art with our 80s-inspired drawing canvas",
+  title: "Emergent Gallery - Digital Art Platform",
+  description: "Create and share digital art in our immersive gallery experience",
   generator: "v0.app",
 }
 
