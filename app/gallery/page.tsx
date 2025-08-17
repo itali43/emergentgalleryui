@@ -57,8 +57,9 @@ export default function GalleryPage() {
         const data = await response.json()
         
         if (data.images && Array.isArray(data.images)) {
+          const length = data.images.length;
           setPaintings(data.images.map((item: any, index: number) => ({
-            tokenId: index + 1,
+            tokenId: length - index,
             imageUrl: `${EGGMAN_API_URL}${item.url}`,
             owner: item.owner
           })))
