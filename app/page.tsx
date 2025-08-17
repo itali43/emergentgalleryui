@@ -48,9 +48,31 @@ export default function HomePage() {
     >
       <header className="relative z-10 p-6">
         <div className="flex justify-between items-center mb-3">
-          <h1 className="font-sans font-light text-3xl md:text-4xl text-white drop-shadow-lg tracking-wide">
-            welcome to the <span className="font-bold text-cyan-400">Emergent Gallery</span>
-          </h1>
+          <div className="relative">
+            <div
+              className="absolute inset-0 bg-white/20"
+              style={{
+                clipPath: "polygon(0 0, calc(100% - 60px) 0, calc(100% - 20px) 100%, 0 100%)",
+                left: "-1.5rem",
+                right: "-4rem",
+                top: "-0.5rem",
+                bottom: "-0.5rem",
+              }}
+            />
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm border-t-2 border-r-2 border-b-2 border-white/60"
+              style={{
+                clipPath: "polygon(0 0, calc(100% - 60px) 0, calc(100% - 20px) 100%, 0 100%)",
+                left: "-1.5rem",
+                right: "-4rem",
+                top: "-0.5rem",
+                bottom: "-0.5rem",
+              }}
+            />
+            <h1 className="relative font-sans font-light text-3xl md:text-4xl text-white drop-shadow-lg tracking-wide">
+              welcome to the <span className="font-bold text-cyan-400">Emergent Gallery</span>
+            </h1>
+          </div>
           <Button
             className="bg-amber-900/90 backdrop-blur-sm hover:bg-amber-800 text-amber-100 border border-amber-700 font-medium px-6 shadow-lg"
             onClick={handleWalletAction}
