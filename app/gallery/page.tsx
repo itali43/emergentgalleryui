@@ -57,7 +57,7 @@ export default function GalleryPage() {
         
         if (data.images && Array.isArray(data.images)) {
           setPaintings(data.images.map((item: any, index: number) => ({
-            tokenId: 1000 + index + 1,
+            tokenId: index + 1,
             imageUrl: `${EGGMAN_API_URL}${item.url}`,
             owner: item.owner
           })))
